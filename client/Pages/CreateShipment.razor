@@ -1,0 +1,251 @@
+@page "/shipments/create"
+@using client.Services
+@using client.Models
+@using System.ComponentModel.DataAnnotations
+@inject IShipmentService ShipmentService
+@inject IEtaCalculationService EtaCalculationService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Add New Shipment - Container Shipment Tracker</PageTitle>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="display-5 text-primary mb-3">
+            <i class="fas fa-plus me-3"></i>
+            Add New Shipment
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="/shipments">Shipments</a></li>
+                <li class="breadcrumb-item active">Add New</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-ship me-2"></i>
+                    Shipment Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="@newShipment" OnValidSubmit="@HandleValidSubmit">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="containerId" class="form-label">
+                                Container ID <span class="text-danger">*</span>
+                            </label>
+                            <InputText id="containerId" class="form-control" @bind-Value="newShipment.ContainerId" 
+                                       placeholder="e.g., MSKU7845123" />
+                            <ValidationMessage For="@(() => newShipment.ContainerId)" class="text-danger" />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">Status</label>
+                            <InputSelect id="status" class="form-select" @bind-Value="newShipment.Status">
+                                <option value="In Transit">In Transit</option>
+                                <option value="Arrived at Port">Arrived at Port</option>
+                                <option value="Delayed">Delayed</option>
+                                <option value="Delivered">Delivered</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="originPort" class="form-label">
+                                Origin Port <span class="text-danger">*</span>
+                            </label>
+                            <InputSelect id="originPort" class="form-select" @bind-Value="newShipment.OriginPort">
+                                <option value="">Select Origin Port</option>
+                                @foreach (var port in availablePorts)
+                                {
+                                    <option value="@port">@port</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => newShipment.OriginPort)" class="text-danger" />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="destinationPort" class="form-label">
+                                Destination Port <span class="text-danger">*</span>
+                            </label>
+                            <InputSelect id="destinationPort" class="form-select" @bind-Value="newShipment.DestinationPort">
+                                <option value="">Select Destination Port</option>
+                                @foreach (var port in availablePorts)
+                                {
+                                    <option value="@port">@port</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => newShipment.DestinationPort)" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="departureDate" class="form-label">
+                                Departure Date <span class="text-danger">*</span>
+                            </label>
+                            <InputDate id="departureDate" class="form-control" @bind-Value="newShipment.DepartureDate" />
+                            <ValidationMessage For="@(() => newShipment.DepartureDate)" class="text-danger" />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="eta" class="form-label">
+                                Estimated Arrival (ETA) <span class="text-danger">*</span>
+                            </label>
+                            <InputDate id="eta" class="form-control" @bind-Value="newShipment.Eta" />
+                            <ValidationMessage For="@(() => newShipment.Eta)" class="text-danger" />
+                            @if (etaCalculated)
+                            {
+                                <small class="text-success">
+                                    <i class="fas fa-check me-1"></i>
+                                    ETA auto-calculated based on route
+                                </small>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="latitude" class="form-label">Current Latitude</label>
+                            <InputNumber id="latitude" class="form-control" @bind-Value="newShipment.LastKnownLat" 
+                                         step="0.000001" placeholder="e.g., 1.3521" />
+                            <small class="text-muted">Optional: Current position of the container</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="longitude" class="form-label">Current Longitude</label>
+                            <InputNumber id="longitude" class="form-control" @bind-Value="newShipment.LastKnownLng" 
+                                         step="0.000001" placeholder="e.g., 103.8198" />
+                            <small class="text-muted">Optional: Current position of the container</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <button type="button" @onclick="Cancel" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            Cancel
+                        </button>
+                        <div>
+                            <button type="button" @onclick="CalculateEta" class="btn btn-outline-info me-2">
+                                <i class="fas fa-calculator me-2"></i>
+                                Calculate ETA
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-save me-2"></i>
+                                }
+                                @(isSubmitting ? "Creating..." : "Create Shipment")
+                            </button>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Shipment Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="text-primary">Container Formats</h6>
+                    <ul class="list-unstyled small">
+                        <li><code>MSKU7845123</code> - Standard format</li>
+                        <li><code>TCLU1234567</code> - 11-character ID</li>
+                        <li><code>GESU6234567</code> - ISO 6346 standard</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="text-primary">Status Types</h6>
+                    <ul class="list-unstyled small">
+                        <li><span class="badge bg-success me-2">In Transit</span> Currently shipping</li>
+                        <li><span class="badge bg-primary me-2">Arrived at Port</span> At destination port</li>
+                        <li><span class="badge bg-warning me-2">Delayed</span> Behind schedule</li>
+                        <li><span class="badge bg-info me-2">Delivered</span> Completed delivery</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Auto ETA Calculation:</strong> The system automatically calculates estimated arrival times based on shipping routes and average vessel speeds.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CreateShipmentRequest newShipment = new()
+    {
+        DepartureDate = DateTime.Today,
+        Eta = DateTime.Today.AddDays(14),
+        Status = "In Transit"
+    };
+    
+    private bool isSubmitting = false;
+    private bool etaCalculated = false;
+    
+    private readonly string[] availablePorts = {
+        "Shanghai", "Singapore", "Rotterdam", "Los Angeles", "Hamburg",
+        "Antwerp", "Qingdao", "Busan", "Ningbo", "Guangzhou",
+        "Tianjin", "Jebel Ali", "Klang", "Kaohsiung", "Hong Kong",
+        "Laem Chabang", "Long Beach", "New York", "Savannah", "Norfolk"
+    };
+
+    private async Task HandleValidSubmit()
+    {
+        isSubmitting = true;
+        try
+        {
+            await ShipmentService.CreateShipmentAsync(newShipment);
+            await JSRuntime.InvokeVoidAsync("alert", "Shipment created successfully!");
+            Navigation.NavigateTo("/shipments");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating shipment: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Error creating shipment. Please try again.");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/shipments");
+    }
+
+    private void CalculateEta()
+    {
+        if (!string.IsNullOrEmpty(newShipment.OriginPort) && 
+            !string.IsNullOrEmpty(newShipment.DestinationPort) && 
+            newShipment.DepartureDate != default)
+        {
+            newShipment.Eta = EtaCalculationService.CalculateEta(
+                newShipment.OriginPort, 
+                newShipment.DestinationPort, 
+                newShipment.DepartureDate);
+            etaCalculated = true;
+            StateHasChanged();
+        }
+    }
+}
