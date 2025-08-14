@@ -1,11 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "client.csproj",
-      "use": "@vercel/dotnet"
-    }
-  ],
   "outputDirectory": "publish/wwwroot",
   "routes": [
     {
