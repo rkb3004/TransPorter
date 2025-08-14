@@ -26,7 +26,26 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // For production, you would check against specific domains
+    // Allow Vercel deployments
+    if (origin.includes('vercel.app') || origin.includes('vercel.com')) {
+      return callback(null, true);
+    }
+    
+    // Allow specific production domains
+    const allowedOrigins = [
+      'https://your-app-name.vercel.app', // Replace with your actual Vercel URL
+      process.env.CLIENT_URL
+    ].filter(Boolean);
+    
+    if (allowedOrigins.some(allowedOrigin => allowedOrigin && origin.includes(allowedOrigin))) {
+      return callback(null, true);
+    }
+    
+    // For development, allow all localhost
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,

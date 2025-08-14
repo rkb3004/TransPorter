@@ -6,7 +6,7 @@ A full-stack application for tracking container shipments with real-time status 
 
 - **Frontend**: Blazor WebAssembly (C#)
 - **Backend**: Node.js with Express.js
-- **Database**: SQLite with Prisma ORM
+- **Database**: NeoDB (PostgreSQL-compatible) with Prisma ORM
 - **Maps**: Leaflet.js integration
 - **UI Framework**: Bootstrap 5
 
@@ -63,23 +63,38 @@ ContainerShipmentTracker/
    npm install
    ```
 
-3. Set up environment variables:
+3. Set up NeoDB database:
+   
+   **Option A: Local NeoDB/PostgreSQL**
+   - Install NeoDB or PostgreSQL locally
+   - Create a database named `container_tracker`
+   - Update `.env` file with your connection string
+   
+   **Option B: NeoDB Cloud**
+   - Sign up for NeoDB cloud service
+   - Create a database instance
+   - Copy the connection string to `.env`
+   
+   See `server/NEODB_SETUP.md` for detailed setup instructions.
+
+4. Configure environment variables:
    ```bash
    cp .env.example .env
-   # Edit .env with your configuration
+   # Edit .env with your NeoDB connection string
+   DATABASE_URL="postgresql://username:password@localhost:5432/container_tracker?schema=public"
    ```
 
-4. Run database migrations:
+5. Run database migrations:
    ```bash
-   npx prisma migrate dev
+   npm run db:migrate
    ```
 
-5. Seed the database with sample data:
+6. Seed the database with sample data:
    ```bash
    npm run db:seed
    ```
 
-6. Start the development server:
+7. Start the development server:
    ```bash
    npm run dev
    ```
@@ -156,6 +171,8 @@ model Shipment {
 }
 ```
 
+**Note**: The schema uses PostgreSQL-compatible types optimized for NeoDB's analytical capabilities.
+
 ## Technologies Used
 
 ### Backend
@@ -163,7 +180,7 @@ model Shipment {
 - **Express.js**: Web framework
 - **TypeScript**: Type-safe JavaScript
 - **Prisma**: Database ORM
-- **SQLite**: Lightweight database
+- **NeoDB**: High-performance PostgreSQL-compatible database
 - **CORS**: Cross-origin resource sharing
 
 ### Frontend

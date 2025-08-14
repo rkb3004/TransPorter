@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using client.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace client.Services;
 
@@ -15,18 +16,19 @@ public interface IShipmentService
 public class ShipmentService : IShipmentService
 {
     private readonly HttpClient _httpClient;
-    private const string BaseUrl = "http://localhost:3000/api";
+    private readonly string _baseUrl;
 
-    public ShipmentService(HttpClient httpClient)
+    public ShipmentService(HttpClient httpClient, IConfiguration configuration)
     {
         _httpClient = httpClient;
+        _baseUrl = configuration["ApiBaseUrl"] ?? "http://localhost:3000/api";
     }
 
     public async Task<List<Shipment>> GetShipmentsAsync()
     {
         try
         {
-            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<Shipment>>>($"{BaseUrl}/shipments");
+            var response = await _httpClient.GetFromJsonAsync<ApiResponse<List<Shipment>>>($"{_baseUrl}/shipments");
             return response?.Data ?? new List<Shipment>();
         }
         catch (Exception ex)
@@ -40,7 +42,7 @@ public class ShipmentService : IShipmentService
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<Shipment>($"{BaseUrl}/shipments/{id}");
+            return await _httpClient.GetFromJsonAsync<Shipment>($"{_baseUrl}/shipments/{id}");
         }
         catch (Exception ex)
         {
@@ -51,21 +53,21 @@ public class ShipmentService : IShipmentService
 
     public async Task<Shipment> CreateShipmentAsync(CreateShipmentRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/shipments", request);
+        var response = await _httpClient.PostAsJsonAsync($"{_baseUrl}/shipments", request);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Shipment>() ?? throw new InvalidOperationException("Failed to create shipment");
     }
 
     public async Task<Shipment> UpdateShipmentAsync(int id, UpdateShipmentRequest request)
     {
-        var response = await _httpClient.PutAsJsonAsync($"{BaseUrl}/shipments/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync($"{_baseUrl}/shipments/{id}", request);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Shipment>() ?? throw new InvalidOperationException("Failed to update shipment");
     }
 
     public async Task DeleteShipmentAsync(int id)
     {
-        var response = await _httpClient.DeleteAsync($"{BaseUrl}/shipments/{id}");
+        var response = await _httpClient.DeleteAsync($"{_baseUrl}/shipments/{id}");
         response.EnsureSuccessStatusCode();
     }
 }

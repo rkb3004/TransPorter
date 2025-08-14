@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: container-tracker-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false  # This will be set manually in Render dashboard
+    autoDeploy: false
