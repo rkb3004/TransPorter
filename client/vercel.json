@@ -1,9 +1,6 @@
 {
   "outputDirectory": "publish/wwwroot",
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
